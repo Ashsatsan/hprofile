@@ -25,11 +25,20 @@ jobs:
         - name: Analyze with SonarCloud
           run: sonar-scanner
             -Dsonar.host.url=${{ secrets.SONAR_URL }}
-            -Dsonar.login=${{ secrets.TOKEN }}
+            -Dsonar.token=${{ secrets.TOKEN }}
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
             -Dsonar.sources=src/
             -Dsonar.junit.reportPaths=target/surefire-reports/
             -Dsonar.jacoco.reportsPath=target/jacoco.exec 
             -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
-            -Dsonar.java.binaries=target/classes/ # Change this to the correct path for main class binaries
+            -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/
+
+        - name: SonarQube Quality Gate check
+            id: sonarqube-quality-gate-check
+            uses: sonarsource/sonarqube-quality-gate-action@master
+            # Force to fail step after specific time.
+            timeout-minutes: 5
+            env:
+             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+             SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}                                   
