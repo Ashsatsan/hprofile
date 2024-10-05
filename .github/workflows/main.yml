@@ -11,4 +11,29 @@ jobs:
           run: mvn test
 
         - name: Checkstyle Analysis
-          run: mvn checkstyle:checkstyle
+          run: mvn checkstyle:checkstyle 
+                    
+        - name: Java setup jdk
+        - uses: actions/setup-java@v4
+          with:
+             distribution: 'temurin' # See 'Supported distributions' for available options
+             java-version: '11'
+
+        - name: Setup SonarQube
+          uses: warchant/setup-sonar-scanner@v7
+
+        - name: Analyze with SonarCloud
+          run: sonar-scanner
+              -Dsonar.host.url=${{ secrets.SONAR_URL }}
+              -Dsonar.login=${{ secrets.TOKEN }}
+              -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+              -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+              -Dsonar.sources=src/
+              -Dsonar.
+              -Dsonar.tests=tests/
+              -Dsonar.test.exclusions=tests/**
+              -Dsonar.junit.reportPaths=target/surefire-reports/
+              -Dsonar.jacoco.reportsPath=target/jacoco.exec 
+              -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+              -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/
+              
