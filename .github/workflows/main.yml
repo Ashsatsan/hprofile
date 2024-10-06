@@ -60,7 +60,7 @@ jobs:
             sed -i "s/db01/${{ secrets.RDS_ENDPOINT }}/" src/main/resources/application.properties
 
       - name: Build and push to ECR
-        uses: yumafuu/docker-build-ecr-push-action@v1
+        uses: appleboy/docker-ecr-action@master
         with:
           ecr_account_id: ${{ secrets.ACCOUNT_ID }}
           access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
