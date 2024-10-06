@@ -1,5 +1,7 @@
 name: Workflow for the project
 on: [workflow_dispatch, push]
+env: 
+   AWS_region: us-east-2
 jobs:
   Testing:
      runs-on: ubuntu-latest
@@ -41,4 +43,29 @@ jobs:
           timeout-minutes: 5
           env:
              SONAR_TOKEN: ${{ secrets.TOKEN }}
-             SONAR_HOST_URL: ${{ secrets.SONAR_URL }}                                   
+             SONAR_HOST_URL: ${{ secrets.SONAR_URL }}   
+
+  BUILD_AND_PUSH:
+     need: Testing 
+     runs-on: ubuntu-latest
+     steps:
+        - name: Update application.properties file
+          run: |
+             sed -i "s/^jbdc.username.*$/jdbc.username\=${{env.secret.RDS_USER}}/" src/main/resources/application.properties
+             sed -i "s/^jdbc.password.*$/jdbc.password\=${{env.secret.RDS_PASS}}/" src/main/resources/application.properties
+             sed -i "s/db01/${{ secrets.RDS_ENDPOINT }}/" src/main/resources/application.properties
+  
+        - name: Build and push to ECR
+        - uses: yumafuu/docker-build-ecr-push-action@v1
+           with:
+             AWS_region: us-east-2 
+             ACCOUNT_ID: ${{secrets.ACCOUNT_ID}}
+             AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+             AWS_SECRET_ACCESS_KEY: ${{AWS_SECRET_ACCESS_KEY}}
+             REGISTRY: ${{REGISTRY}}
+             ecr_repo: vproappecr
+             dockerfile: ./Dockerfile
+             tag: LATEST, ${{github.run_number}}
+             context: ./
+             deamon-off: false    
+             
