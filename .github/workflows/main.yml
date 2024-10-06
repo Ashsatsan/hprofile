@@ -62,10 +62,10 @@ jobs:
       - name: Build and push to ECR
         uses: yumafuu/docker-build-ecr-push-action@v1
         with:
-          ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Fixed the secret reference
-          REGISTRY: ${{ secrets.REGISTRY }}  # Assuming you meant to reference a secret
+          ecr_account_id: ${{ secrets.ACCOUNT_ID }}
+          access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Fixed the secret reference
+          registry: ${{ secrets.REGISTRY }}  # Assuming you meant to reference a secret
           ecr_repo: vproappecr
           region: ${{env.AWS_region}}
           tag: latest, ${{ github.run_number }}
