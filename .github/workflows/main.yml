@@ -55,7 +55,7 @@ jobs:
         
       - name: Update application.properties file
         run: |
-            sed -i "s/^jdbc.username.*$/jdbc.username=${{ secrets.RDS_USER }}/" src/main/resources/application.properties
+           sed -i "s/^jdbc.username.*$/jdbc.username=${{ secrets.RDS_USER }}/" src/main/resources/application.properties
             sed -i "s/^jdbc.password.*$/jdbc.password=${{ secrets.RDS_PASS }}/" src/main/resources/application.properties
             sed -i "s/db01/${{ secrets.RDS_ENDPOINT }}/" src/main/resources/application.properties
 
@@ -71,3 +71,25 @@ jobs:
          daemon_off: false
          dockerfile: ./Dockerfile
          context: ./
+
+       - name: Checkout
+        uses: actions/checkout@v2
+
+       - name: Configure AWS credentials
+         uses: aws-actions/configure-aws-credentials@v1
+         with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+       - name: Login to Amazon ECR
+         id: login-ecr
+         uses: aws-actions/amazon-ecr-login@v1
+
+       - name: Build and redeploy
+         uses: jaroldwong/ecr-push-and-ecs-deploy@v1.1
+         with:
+           ecr-registry: ${{ steps.login-ecr.outputs.registry }}
+           ecr-repository: 'vproaappecr'
+           ecs-cluster: 'proj-workflow-cluster'
+           ecs-service: 'proj-workflow-svc1'
