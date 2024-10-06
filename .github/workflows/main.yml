@@ -90,3 +90,6 @@ jobs:
           ecr-repository: 'vproaappecr'
           ecs-cluster: 'proj-workflow-cluster'
           ecs-service: 'proj-workflow-svc1'
+     
+      - name: Force new ECS deployment
+        run: aws ecs update-service --cluster proj-workflow-cluster --service proj-workflow-svc1 --force-new-deployment
