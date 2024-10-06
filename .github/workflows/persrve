@@ -2,7 +2,6 @@ name: Workflow for the project
 on: [workflow_dispatch, push]
 env: 
    AWS_REGION: us-east-2
-
 jobs:
   Testing:
     runs-on: ubuntu-latest
@@ -13,7 +12,7 @@ jobs:
       - name: Java setup JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '11'
 
       - name: Maven test 
@@ -41,10 +40,11 @@ jobs:
       - name: SonarQube Quality Gate check
         id: sonarqube-quality-gate-check
         uses: sonarsource/sonarqube-quality-gate-action@master
+        # Force to fail step after specific time.
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_URL }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_URL }} 
 
   BUILD_AND_PUSH:
     needs: Testing 
@@ -56,37 +56,40 @@ jobs:
       - name: Update application.properties file
         run: |
            sed -i "s/^jdbc.username.*$/jdbc.username=${{ secrets.RDS_USER }}/" src/main/resources/application.properties
-           sed -i "s/^jdbc.password.*$/jdbc.password=${{ secrets.RDS_PASS }}/" src/main/resources/application.properties
-           sed -i "s/db01/${{ secrets.RDS_ENDPOINT }}/" src/main/resources/application.properties
+            sed -i "s/^jdbc.password.*$/jdbc.password=${{ secrets.RDS_PASS }}/" src/main/resources/application.properties
+            sed -i "s/db01/${{ secrets.RDS_ENDPOINT }}/" src/main/resources/application.properties
 
       - name: Build and push to ECR
         uses: appleboy/docker-ecr-action@master
         with:
-          access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          registry: ${{ secrets.REGISTRY }}
-          repo: vproaappecr
-          region: ${{ env.AWS_REGION }}
-          tags: latest,${{ github.run_number }}
-          daemon_off: false
-          dockerfile: ./Dockerfile
-          context: ./
+         access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+         secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+         registry: ${{ secrets.REGISTRY }}
+         repo: vproaappecr
+         region: ${{ env.AWS_REGION }}
+         tags: latest,${{ github.run_number }}
+         daemon_off: false
+         dockerfile: ./Dockerfile
+         context: ./
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
+       - name: Checkout
+        uses: actions/checkout@v2
+
+       - name: Configure AWS credentials
+         uses: aws-actions/configure-aws-credentials@v1
+         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-west-2
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+       - name: Login to Amazon ECR
+         id: login-ecr
+         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and redeploy
-        uses: jaroldwong/ecr-push-and-ecs-deploy@v1.1
-        with:
-          ecr-registry: ${{ steps.login-ecr.outputs.registry }}
-          ecr-repository: 'vproaappecr'
-          ecs-cluster: 'proj-workflow-cluster'
-          ecs-service: 'proj-workflow-svc1'
+       - name: Build and redeploy
+         uses: jaroldwong/ecr-push-and-ecs-deploy@v1.1
+         with:
+           ecr-registry: ${{ steps.login-ecr.outputs.registry }}
+           ecr-repository: 'vproaappecr'
+           ecs-cluster: 'proj-workflow-cluster'
+           ecs-service: 'proj-workflow-svc1'
