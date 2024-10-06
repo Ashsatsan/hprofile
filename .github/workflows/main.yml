@@ -4,69 +4,67 @@ env:
    AWS_region: us-east-2
 jobs:
   Testing:
-     runs-on: ubuntu-latest
-     steps:
-        - name: Checkout for source code 
-          uses: actions/checkout@v4
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout for source code 
+        uses: actions/checkout@v4
 
-        - name: Java setup JDK
-          uses: actions/setup-java@v4
-          with:
-             distribution: 'temurin' # See 'Supported distributions' for available options
-             java-version: '11'
+      - name: Java setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '11'
 
-        - name: Maven test 
-          run: mvn test
+      - name: Maven test 
+        run: mvn test
 
-        - name: Checkstyle Analysis
-          run: mvn checkstyle:checkstyle 
+      - name: Checkstyle Analysis
+        run: mvn checkstyle:checkstyle 
 
-        - name: Setup SonarQube
-          uses: warchant/setup-sonar-scanner@v7
+      - name: Setup SonarQube
+        uses: warchant/setup-sonar-scanner@v7
 
-        - name: Analyze with SonarCloud
-          run: sonar-scanner
-            -Dsonar.host.url=${{ secrets.SONAR_URL }}
-            -Dsonar.token=${{ secrets.TOKEN }}
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
-            -Dsonar.sources=src/
-            -Dsonar.junit.reportPaths=target/surefire-reports/
-            -Dsonar.jacoco.reportsPath=target/jacoco.exec 
-            -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
+      - name: Analyze with SonarCloud
+        run: |
+          sonar-scanner \
+            -Dsonar.host.url=${{ secrets.SONAR_URL }} \
+            -Dsonar.token=${{ secrets.TOKEN }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.sources=src/ \
+            -Dsonar.junit.reportPaths=target/surefire-reports/ \
+            -Dsonar.jacoco.reportsPath=target/jacoco.exec \
+            -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml \
             -Dsonar.java.binaries=target/test-classes/com/visualpathit/account/controllerTest/
 
-        - name: SonarQube Quality Gate check
-          id: sonarqube-quality-gate-check
-          uses: sonarsource/sonarqube-quality-gate-action@master
-            # Force to fail step after specific time.
-          timeout-minutes: 5
-          env:
-             SONAR_TOKEN: ${{ secrets.TOKEN }}
-             SONAR_HOST_URL: ${{ secrets.SONAR_URL }}   
+      - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        # Force to fail step after specific time.
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_URL }}   
 
   BUILD_AND_PUSH:
-     need: Testing 
-     runs-on: ubuntu-latest
-     steps:
-        - name: Update application.properties file
-          run: |
-             sed -i "s/^jbdc.username.*$/jdbc.username\=${{env.secret.RDS_USER}}/" src/main/resources/application.properties
-             sed -i "s/^jdbc.password.*$/jdbc.password\=${{env.secret.RDS_PASS}}/" src/main/resources/application.properties
-             sed -i "s/db01/${{ secrets.RDS_ENDPOINT }}/" src/main/resources/application.properties
+    needs: Testing 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update application.properties file
+        run: |
+          sed -i "s/^jdbc.username.*$/jdbc.username=${{ secrets.RDS_USER }}/" src/main/resources/application.properties
+          sed -i "s/^jdbc.password.*$/jdbc.password=${{ secrets.RDS_PASS }}/" src/main/resources/application.properties
+          sed -i "s/db01/${{ secrets.RDS_ENDPOINT }}/" src/main/resources/application.properties
   
-        - name: Build and push to ECR
-        - uses: yumafuu/docker-build-ecr-push-action@v1
-           with:
-            
-            ACCOUNT_ID: ${{secrets.ACCOUNT_ID}}
-            AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
-            AWS_SECRET_ACCESS_KEY: ${{AWS_SECRET_ACCESS_KEY}}
-            REGISTRY: ${{REGISTRY}}
-            ecr_repo: vproappecr
-            dockerfile: ./Dockerfile
-            tag: LATEST, ${{github.run_number}}
-            context: ./
-            deamon-off: false    
-              
- 
+      - name: Build and push to ECR
+        uses: yumafuu/docker-build-ecr-push-action@v1
+        with:
+          ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Fixed the secret reference
+          REGISTRY: ${{ secrets.REGISTRY }}  # Assuming you meant to reference a secret
+          ecr_repo: vproappecr
+          dockerfile: ./Dockerfile
+          tag: LATEST, ${{ github.run_number }}
+          context: ./
+          daemon-off: false  # Fixed spelling from 'deamon-off' to 'daemon-off'
