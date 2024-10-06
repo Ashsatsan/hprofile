@@ -1,7 +1,7 @@
 name: Workflow for the project
 on: [workflow_dispatch, push]
 env: 
-   AWS_region: us-east-2
+   AWS_REGION: us-east-2
 jobs:
   Testing:
     runs-on: ubuntu-latest
@@ -62,13 +62,12 @@ jobs:
       - name: Build and push to ECR
         uses: appleboy/docker-ecr-action@master
         with:
-          ecr_account_id: ${{ secrets.ACCOUNT_ID }}
-          access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Fixed the secret reference
-          registry: ${{ secrets.REGISTRY }}  # Assuming you meant to reference a secret
-          ecr_repo: vproappecr
-          region: ${{env.AWS_region}}
-          tag: latest, ${{ github.run_number }}
-          daemon-off: false  # Fixed spelling from 'deamon-off' to 'daemon-off'
-          dockerfile: ./Dockerfile
-          context: ./
+         access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+         secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+         registry: ${{ secrets.REGISTRY }}
+         repo: vproappecr
+         region: ${{ env.AWS_REGION }}
+         tags: latest,${{ github.run_number }}
+         daemon_off: false
+         dockerfile: ./Dockerfile
+         context: ./
